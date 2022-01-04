@@ -89,11 +89,11 @@ const layers = {
   symbols: {
     trigger: 1,
     map: {
-      ")": [2],
-      "(": [3],
+      "(": [2],
+      ")": [3],
       "{": [4],
-      "]": [6],
-      "[": [7],
+      "[": [6],
+      "]": [7],
       "}": [8],
       vk_none: [5],
     },
@@ -127,8 +127,8 @@ const lockLayers = {
     map: {
       up_arrow: [2],
       down_arrow: [6],
-      left_arrow: [7],
-      right_arrow: [5],
+      left_arrow: [5],
+      right_arrow: [7],
     },
   },
 };
