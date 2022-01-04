@@ -162,6 +162,8 @@ output.virtual_hid_keyboard = {
   mouse_key_xy_scale: 100,
 };
 
+existing.profiles.forEach(profile => { profile.selected = false; });
+
 const oldArtseyLayoutIx = existing.profiles.findIndex(
   (p) => p.name === profile
 );
