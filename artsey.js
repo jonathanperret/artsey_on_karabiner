@@ -255,9 +255,6 @@ Object.entries(oneShots).forEach(([to, from]) => {
 
 // layers
 Object.entries(layers).forEach(([layer, { trigger, map }]) => {
-  // cancel
-  mapKey([trigger], null, { isCancel: true, layer });
-
   Object.entries(map)
     .sort((a, b) => b[1].length - a[1].length)
     .forEach(([to, from]) => {
@@ -332,7 +329,6 @@ function mapKey(
     useRawKeys,
     layer,
     isOneShot,
-    isCancel,
     isLockLayer,
   } = {}
 ) {
@@ -455,36 +451,6 @@ function mapKey(
     return;
   }
 
-  if (isCancel) {
-    output.complex_modifications.rules.push({
-      description: `Cancel ${layer}`,
-      manipulators: [
-        {
-          conditions: [...conditions],
-          from: {
-            simultaneous: fromKeys.map((f) => ({ key_code: f })),
-            simultaneous_options: {
-              detect_key_down_uninterruptedly: false,
-              key_down_order: "insensitive",
-              key_up_order: "insensitive",
-              key_up_when: "any",
-            },
-          },
-          to: [
-            {
-              set_variable: {
-                name: `layer_${layer}`,
-                value: 0,
-              },
-            },
-          ],
-          type: "basic",
-        },
-      ],
-    });
-    return;
-  }
-
   if (enableOneShots) {
     buildCombinations(Object.keys(oneShots), true).forEach((mods) => {
       output.complex_modifications.rules.push({
@@ -539,11 +505,19 @@ function mapKey(
             key_code: fromKeys[0],
           },
           to_if_alone: mapTo(to),
-          to_if_held_down: [
+          to: [
             {
               set_variable: {
                 name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
                 value: 1,
+              },
+            },
+          ],
+          to_after_key_up: [
+            {
+              set_variable: {
+                name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
+                value: 0,
               },
             },
           ],
