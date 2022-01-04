@@ -172,6 +172,41 @@ if (oldArtseyLayoutIx > -1) {
   delete existing.profiles[oldArtseyLayoutIx];
 }
 
+// Space for cheatsheet
+output.complex_modifications.rules.push({
+  description: `cheatsheet`,
+  manipulators: [
+    {
+      conditions: [
+        {
+          type: "variable_if",
+          name: `disable_artsey`,
+          value: 0,
+        },
+        {
+          type: 'frontmost_application_unless',
+          bundle_identifiers: [ 'com.apple.quicklook.qlmanage' ]
+        },
+      ],
+      from: {
+        key_code: "spacebar",
+      },
+      to: [
+        {
+          set_variable: {
+            name: `cheatsheet`,
+            value: 1,
+          },
+        },
+        {
+          shell_command: `qlmanage -p ${__dirname}/cheatsheet_right.png`
+        }
+      ],
+      type: "basic",
+    },
+  ],
+});
+
 // Capslock to toggle
 output.complex_modifications.rules.push({
   description: `capslock disable`,
