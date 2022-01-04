@@ -440,8 +440,14 @@ function mapKey(
               set_variable: {
                 name: `one_shot_${to}`,
                 value: 1,
-              },
+              }
             },
+            {
+              set_notification_message: {
+                id: `io.artsey.one_shot_${to}`,
+                text: `${to}`
+              }
+            }
           ],
           type: "basic",
         },
@@ -477,12 +483,20 @@ function mapKey(
               to_if_alone: [
                 { ...mapTo(to)[0], modifiers: mods },
 
-                ...mods.map((mod) => ({
-                  set_variable: {
-                    name: `one_shot_${mod}`,
-                    value: 0,
+                ...mods.flatMap((mod) => ([
+                  {
+                    set_variable: {
+                      name: `one_shot_${mod}`,
+                      value: 0,
+                    }
                   },
-                })),
+                  {
+                    set_notification_message: {
+                      id: `io.artsey.one_shot_${mod}`,
+                      text: ''
+                    }
+                  }
+                ])),
               ],
               to: [
                 {
@@ -571,12 +585,20 @@ function mapKey(
               to: [
                 { ...mapTo(to)[0], modifiers: mods },
 
-                ...mods.map((mod) => ({
-                  set_variable: {
-                    name: `one_shot_${mod}`,
-                    value: 0,
+                ...mods.flatMap((mod) => ([
+                  {
+                    set_variable: {
+                      name: `one_shot_${mod}`,
+                      value: 0,
+                    }
                   },
-                })),
+                  {
+                    set_notification_message: {
+                      id: `io.artsey.one_shot_${mod}`,
+                      text: ''
+                    }
+                  }
+                ])),
               ],
               type: "basic",
             },
