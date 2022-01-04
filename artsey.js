@@ -421,7 +421,13 @@ function mapKey(
               set_variable: {
                 name: `layer_${layer}`,
                 value: 1,
-              },
+              }
+            },
+            {
+              set_notification_message: {
+                id: `io.artsey.lock_${layer}`,
+                text: layer
+              }
             },
           ],
           type: "basic",
@@ -455,6 +461,12 @@ function mapKey(
                 name: `layer_${layer}`,
                 value: 0,
               },
+            },
+            {
+              set_notification_message: {
+                id: `io.artsey.lock_${layer}`,
+                text: ''
+              }
             },
           ],
           type: "basic",
