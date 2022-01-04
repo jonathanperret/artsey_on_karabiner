@@ -129,6 +129,8 @@ const lockLayers = {
       down_arrow: [6],
       left_arrow: [5],
       right_arrow: [7],
+      page_down: [8],
+      page_up: [4],
     },
   },
 };
