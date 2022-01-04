@@ -194,6 +194,11 @@ output.complex_modifications.rules.push({
             value: 1,
           },
         },
+        {
+          "select_input_source": {
+              "language": "^fr$"
+          }
+        }
       ],
       type: "basic",
     },
@@ -221,6 +226,11 @@ output.complex_modifications.rules.push({
             value: 0,
           },
         },
+        {
+          "select_input_source": {
+              "language": "^en$"
+          }
+        }
       ],
       type: "basic",
     },
