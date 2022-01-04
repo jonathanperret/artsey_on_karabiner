@@ -451,53 +451,68 @@ function mapKey(
     return;
   }
 
-  if (enableOneShots) {
-    buildCombinations(Object.keys(oneShots), true).forEach((mods) => {
-      output.complex_modifications.rules.push({
-        description: `[${mods.join()}] ${fromKeys.join()} to ${to}`,
-        manipulators: [
-          {
-            conditions: [
-              ...conditions,
-              ...mods.map((mod) => ({
-                type: "variable_if",
-                name: `one_shot_${mod}`,
-                value: 1,
-              })),
-            ],
-            from: {
-              simultaneous: fromKeys.map((f) => ({ key_code: f })),
-              simultaneous_options: {
-                detect_key_down_uninterruptedly: false,
-                key_down_order: "insensitive",
-                key_up_order: "insensitive",
-                key_up_when: "any",
-              },
-            },
-            to: [
-              { ...mapTo(to)[0], modifiers: mods },
-
-              ...mods.map((mod) => ({
-                set_variable: {
-                  name: `one_shot_${mod}`,
-                  value: 0,
-                },
-              })),
-            ],
-            type: "basic",
-          },
-        ],
-      });
-    });
-  }
 
   const matchingLayerIx = Object.values(layers).findIndex(
     (f) => f.trigger === from[0]
   );
 
   if (enableLayerHold && from.length === 1 && matchingLayerIx > -1) {
+    if (enableOneShots) {
+      buildCombinations(Object.keys(oneShots), true).forEach((mods) => {
+        output.complex_modifications.rules.push({
+          description: `[${mods.join()}] ${fromKeys.join()} to ${to} layer`,
+          manipulators: [
+            {
+              conditions: [
+                ...conditions,
+                ...mods.map((mod) => ({
+                  type: "variable_if",
+                  name: `one_shot_${mod}`,
+                  value: 1,
+                })),
+              ],
+              from: {
+                key_code: fromKeys[0],
+              },
+              to_if_alone: [
+                { ...mapTo(to)[0], modifiers: mods },
+
+                ...mods.map((mod) => ({
+                  set_variable: {
+                    name: `one_shot_${mod}`,
+                    value: 0,
+                  },
+                })),
+              ],
+              to: [
+                {
+                  set_variable: {
+                    name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
+                    value: 1,
+                  },
+                },
+              ],
+              to_after_key_up: [
+                {
+                  set_variable: {
+                    name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
+                    value: 0,
+                  },
+                },
+              ],
+              parameters: {
+                "basic.to_if_alone_timeout_milliseconds": layerHold,
+                "basic.to_if_held_down_threshold_milliseconds": layerHold,
+              },
+              type: "basic",
+            },
+          ],
+        });
+      });
+    }
+
     output.complex_modifications.rules.push({
-      description: `${fromKeys.join()} to ${to} lAyer`,
+      description: `${fromKeys.join()} to ${to} layer`,
       manipulators: [
         {
           conditions: [...conditions],
@@ -530,6 +545,46 @@ function mapKey(
       ],
     });
   } else {
+    if (enableOneShots) {
+      buildCombinations(Object.keys(oneShots), true).forEach((mods) => {
+        output.complex_modifications.rules.push({
+          description: `[${mods.join()}] ${fromKeys.join()} to ${to}`,
+          manipulators: [
+            {
+              conditions: [
+                ...conditions,
+                ...mods.map((mod) => ({
+                  type: "variable_if",
+                  name: `one_shot_${mod}`,
+                  value: 1,
+                })),
+              ],
+              from: {
+                simultaneous: fromKeys.map((f) => ({ key_code: f })),
+                simultaneous_options: {
+                  detect_key_down_uninterruptedly: false,
+                  key_down_order: "insensitive",
+                  key_up_order: "insensitive",
+                  key_up_when: "any",
+                },
+              },
+              to: [
+                { ...mapTo(to)[0], modifiers: mods },
+
+                ...mods.map((mod) => ({
+                  set_variable: {
+                    name: `one_shot_${mod}`,
+                    value: 0,
+                  },
+                })),
+              ],
+              type: "basic",
+            },
+          ],
+        });
+      });
+    }
+
     output.complex_modifications.rules.push({
       description: `${fromKeys.join()} to ${to}`,
       manipulators: [
