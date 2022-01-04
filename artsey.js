@@ -319,6 +319,23 @@ existing.profiles = existing.profiles.filter((p) => !!p);
 
 fs.writeFileSync(path, JSON.stringify(existing, null, 2));
 
+function setOneShot(mod, on) {
+  return [
+    {
+      set_variable: {
+        name: `one_shot_${mod}`,
+        value: on ? 1 : 0,
+      }
+    },
+    {
+      set_notification_message: {
+        id: `io.artsey.one_shot_${mod}`,
+        text: on ? mod.replace(/.*_/, '') : '',
+      }
+    }
+  ];
+}
+
 // General rule builder
 function mapKey(
   from,
@@ -421,37 +438,35 @@ function mapKey(
   }
 
   if (isOneShot) {
-    output.complex_modifications.rules.push({
-      description: `[one shot] ${to}`,
-      manipulators: [
-        {
-          conditions: [...conditions],
-          from: {
-            simultaneous: fromKeys.map((f) => ({ key_code: f })),
-            simultaneous_options: {
-              detect_key_down_uninterruptedly: false,
-              key_down_order: "insensitive",
-              key_up_order: "insensitive",
-              key_up_when: "any",
+    [true, false].forEach(cancel => {
+      output.complex_modifications.rules.push({
+        description: `[one shot] ${to}${cancel ? ' cancel':''}`,
+        manipulators: [
+          {
+            conditions: [
+              ...conditions,
+              ...(cancel ? [
+                {
+                  type: "variable_if",
+                  name: `one_shot_${to}`,
+                  value: 1,
+                }
+              ] : [])
+            ],
+            from: {
+              simultaneous: fromKeys.map((f) => ({ key_code: f })),
+              simultaneous_options: {
+                detect_key_down_uninterruptedly: false,
+                key_down_order: "insensitive",
+                key_up_order: "insensitive",
+                key_up_when: "any",
+              },
             },
+            to: setOneShot(to, !cancel),
+            type: "basic",
           },
-          to: [
-            {
-              set_variable: {
-                name: `one_shot_${to}`,
-                value: 1,
-              }
-            },
-            {
-              set_notification_message: {
-                id: `io.artsey.one_shot_${to}`,
-                text: `${to}`
-              }
-            }
-          ],
-          type: "basic",
-        },
-      ],
+        ],
+      });
     });
 
     return;
@@ -483,20 +498,7 @@ function mapKey(
               to_if_alone: [
                 { ...mapTo(to)[0], modifiers: mods },
 
-                ...mods.flatMap((mod) => ([
-                  {
-                    set_variable: {
-                      name: `one_shot_${mod}`,
-                      value: 0,
-                    }
-                  },
-                  {
-                    set_notification_message: {
-                      id: `io.artsey.one_shot_${mod}`,
-                      text: ''
-                    }
-                  }
-                ])),
+                ...mods.flatMap((mod) => setOneShot(mod, false)),
               ],
               to: [
                 {
