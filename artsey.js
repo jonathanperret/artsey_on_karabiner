@@ -9,14 +9,14 @@ const layerHold = 250; // How long required to trigger a hold layer
 
 // Keys to use on your keyboard. 1 is A, 2 is R, 3 is T, 4 is S, 5 is E, 6 is Y, 7 is I, 8 is O
 const bindings = {
-  1: "f",
-  2: "d",
-  3: "s",
-  4: "a",
-  5: "v",
-  6: "c",
-  7: "x",
-  8: "z",
+  1: "y",
+  2: "u",
+  3: "i",
+  4: "o",
+  5: "h",
+  6: "j",
+  7: "k",
+  8: "l",
 };
 
 const globals = {
