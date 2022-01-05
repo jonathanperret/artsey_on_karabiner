@@ -19,6 +19,24 @@ const bindings = {
   8: "l",
 };
 
+// Actions to take when enabling/disabling artsey. Here I'm switching the OS to
+// QWERTY so that mappings are correct.
+const onEnable = [
+  {
+    "select_input_source": {
+      "language": "^en$"
+    }
+  }
+];
+
+const onDisable = [
+  {
+    "select_input_source": {
+      "language": "^fr$"
+    }
+  }
+];
+
 const globals = {
   return_or_enter: [1, 5],
   spacebar: [5, 6, 7, 8],
@@ -193,12 +211,6 @@ output.complex_modifications.rules.push({
       },
       to: [
         {
-          set_variable: {
-            name: `cheatsheet`,
-            value: 1,
-          },
-        },
-        {
           shell_command: `qlmanage -p ${__dirname}/cheatsheet_right.png`
         }
       ],
@@ -221,6 +233,9 @@ output.complex_modifications.rules.push({
       ],
       from: {
         key_code: "caps_lock",
+        modifiers: {
+          mandatory: [ "shift" ]
+        },
       },
       to: [
         {
@@ -229,11 +244,7 @@ output.complex_modifications.rules.push({
             value: 1,
           },
         },
-        {
-          "select_input_source": {
-              "language": "^fr$"
-          }
-        }
+        ...onDisable
       ],
       type: "basic",
     },
@@ -253,6 +264,9 @@ output.complex_modifications.rules.push({
       ],
       from: {
         key_code: "caps_lock",
+        modifiers: {
+          mandatory: [ "shift" ]
+        },
       },
       to: [
         {
@@ -261,11 +275,7 @@ output.complex_modifications.rules.push({
             value: 0,
           },
         },
-        {
-          "select_input_source": {
-              "language": "^en$"
-          }
-        }
+        ...onEnable
       ],
       type: "basic",
     },
