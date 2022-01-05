@@ -192,17 +192,95 @@ if (oldArtseyLayoutIx > -1) {
   delete existing.profiles[oldArtseyLayoutIx];
 }
 
-// Space for cheatsheet
+function checkVariableSet(variable) {
+  return {
+    type: "variable_if",
+    name: variable,
+    value: 1,
+  };
+}
+
+function checkVariableUnset(variable) {
+  return {
+    type: "variable_if",
+    name: variable,
+    value: 0,
+  };
+}
+
+function setFlag(variable) {
+  return {
+    set_variable: {
+      name: variable,
+      value: 1,
+    }
+  };
+}
+
+function clearFlag(variable) {
+  return {
+    set_variable: {
+      name: variable,
+      value: 0,
+    }
+  };
+}
+
+const checkEnabled = checkVariableUnset("disable_artsey");
+const checkDisabled = checkVariableSet("disable_artsey");
+
+// Shift+Capslock to toggle
 output.complex_modifications.rules.push({
-  description: `cheatsheet`,
+  description: "shift+caps_lock to enable artsey.io",
   manipulators: [
     {
       conditions: [
-        {
-          type: "variable_if",
-          name: `disable_artsey`,
-          value: 0,
+        checkEnabled,
+      ],
+      from: {
+        key_code: "caps_lock",
+        modifiers: {
+          mandatory: [ "shift" ]
         },
+      },
+      to: [
+        setFlag("disable_artsey"),
+        ...onDisable
+      ],
+      type: "basic",
+    },
+  ],
+});
+
+output.complex_modifications.rules.push({
+  description: "shift+caps_lock to disable artsey.io",
+  manipulators: [
+    {
+      conditions: [
+        checkDisabled,
+      ],
+      from: {
+        key_code: "caps_lock",
+        modifiers: {
+          mandatory: [ "shift" ]
+        },
+      },
+      to: [
+        clearFlag("disable_artsey"),
+        ...onEnable
+      ],
+      type: "basic",
+    },
+  ],
+});
+
+// Space for cheatsheet
+output.complex_modifications.rules.push({
+  description: "spacebar to artsey.io cheatsheet",
+  manipulators: [
+    {
+      conditions: [
+        checkEnabled,
         {
           type: 'frontmost_application_unless',
           bundle_identifiers: [ 'com.apple.quicklook.qlmanage' ]
@@ -215,69 +293,6 @@ output.complex_modifications.rules.push({
         {
           shell_command: `qlmanage -p ${__dirname}/cheatsheet_right.png`
         }
-      ],
-      type: "basic",
-    },
-  ],
-});
-
-// Capslock to toggle
-output.complex_modifications.rules.push({
-  description: `capslock disable`,
-  manipulators: [
-    {
-      conditions: [
-        {
-          type: "variable_if",
-          name: `disable_artsey`,
-          value: 0,
-        },
-      ],
-      from: {
-        key_code: "caps_lock",
-        modifiers: {
-          mandatory: [ "shift" ]
-        },
-      },
-      to: [
-        {
-          set_variable: {
-            name: `disable_artsey`,
-            value: 1,
-          },
-        },
-        ...onDisable
-      ],
-      type: "basic",
-    },
-  ],
-});
-
-output.complex_modifications.rules.push({
-  description: `capslock enable`,
-  manipulators: [
-    {
-      conditions: [
-        {
-          type: "variable_if",
-          name: `disable_artsey`,
-          value: 1,
-        },
-      ],
-      from: {
-        key_code: "caps_lock",
-        modifiers: {
-          mandatory: [ "shift" ]
-        },
-      },
-      to: [
-        {
-          set_variable: {
-            name: `disable_artsey`,
-            value: 0,
-          },
-        },
-        ...onEnable
       ],
       type: "basic",
     },
@@ -297,7 +312,7 @@ Object.entries(oneShots).forEach(([to, from]) => {
 Object.entries(globals)
   .sort((a, b) => b[1].length - a[1].length)
   .forEach(([to, from]) => {
-    mapKey(from, to, { enableOneShots: true });
+    mapKey(from, to, {});
   });
 
 // layers
@@ -305,7 +320,7 @@ Object.entries(layers).forEach(([layer, { trigger, map }]) => {
   Object.entries(map)
     .sort((a, b) => b[1].length - a[1].length)
     .forEach(([to, from]) => {
-      mapKey(from, to, { enableOneShots: true, layer });
+      mapKey(from, to, { layer });
     });
 });
 
@@ -314,7 +329,7 @@ Object.entries(lockLayers).forEach(([layer, { trigger, map }]) => {
   Object.entries(map)
     .sort((a, b) => b[1].length - a[1].length)
     .forEach(([to, from]) => {
-      mapKey(from, to, { enableOneShots: true, layer });
+      mapKey(from, to, { layer });
     });
 });
 
@@ -322,7 +337,7 @@ Object.entries(lockLayers).forEach(([layer, { trigger, map }]) => {
 Object.entries(alphas)
   .sort((a, b) => b[1].length - a[1].length)
   .forEach(([to, from]) => {
-    mapKey(from, to, { enableOneShots: true, enableLayerHold: true });
+    mapKey(from, to, { enableLayerHold: true });
   });
 
 // Void covered keys
@@ -356,7 +371,17 @@ Object.entries(alphas)
 ].forEach((from) => {
   const boundKeys = Object.values(bindings);
   if (!boundKeys.includes(from)) {
-    mapKey([from], "vk_none", { useRawKeys: true });
+    output.complex_modifications.rules.push({
+      description: `${from} to vk_none`,
+      manipulators: [
+        {
+          conditions: [ checkEnabled ],
+          from: { key_code: from },
+          to: { key_code: "vk_none" },
+          type: "basic",
+        },
+      ],
+    });
   }
 });
 
@@ -366,21 +391,98 @@ existing.profiles = existing.profiles.filter((p) => !!p);
 
 fs.writeFileSync(path, JSON.stringify(existing, null, 2));
 
-function setOneShot(mod, on) {
+function setOneShot(mod) {
   return [
-    {
-      set_variable: {
-        name: `one_shot_${mod}`,
-        value: on ? 1 : 0,
-      }
-    },
+    setFlag(`one_shot_${mod}`),
     {
       set_notification_message: {
         id: `io.artsey.one_shot_${mod}`,
-        text: on ? mod.replace(/.*_/, '') : '',
+        text: mod.replace(/.*_/, ''),
       }
     }
   ];
+}
+
+function clearOneShot(mod) {
+  return [
+    clearFlag(`one_shot_${mod}`),
+    {
+      set_notification_message: {
+        id: `io.artsey.one_shot_${mod}`,
+        text: '',
+      }
+    }
+  ];
+}
+
+function checkOneShot(mod) {
+  return checkVariableSet(`one_shot_${mod}`);
+}
+
+function doLockLayer(layer, fromKeys) {
+  output.complex_modifications.rules.push({
+    description: `${fromKeys.join()} to lock ${layer}`,
+    manipulators: [
+      {
+        conditions: [
+          checkEnabled,
+          checkVariableUnset(`layer_${layer}`),
+        ],
+        from: makeFrom(fromKeys),
+        to: [
+          setFlag(`layer_${layer}`),
+          {
+            set_notification_message: {
+              id: `io.artsey.lock_${layer}`,
+              text: layer
+            }
+          },
+        ],
+        type: "basic",
+      },
+    ],
+  });
+  output.complex_modifications.rules.push({
+    description: `${fromKeys.join()} to unlock ${layer}`,
+    manipulators: [
+      {
+        conditions: [
+          checkEnabled,
+          checkVariableSet(`layer_${layer}`),
+        ],
+        from: makeFrom(fromKeys),
+        to: [
+          clearFlag(`layer_${layer}`),
+          {
+            set_notification_message: {
+              id: `io.artsey.lock_${layer}`,
+              text: ''
+            }
+          },
+        ],
+        type: "basic",
+      },
+    ],
+  });
+}
+
+function doOneShot(mod, fromKeys) {
+  [true, false].forEach(cancel => {
+    output.complex_modifications.rules.push({
+      description: `${fromKeys.join()} to [one shot] ${mod}${cancel ? ' cancel':''}`,
+      manipulators: [
+        {
+          conditions: [
+            checkEnabled,
+            ...(cancel ? [ checkOneShot(mod) ] : [ ])
+          ],
+          from: makeFrom(fromKeys),
+          to: cancel ? clearOneShot(mod) : setOneShot(mod),
+          type: "basic",
+        },
+      ],
+    });
+  });
 }
 
 // General rule builder
@@ -388,400 +490,131 @@ function mapKey(
   from,
   to,
   {
-    enableOneShots,
     enableLayerHold,
-    useRawKeys,
     layer,
     isOneShot,
     isLockLayer,
   } = {}
 ) {
-  const fromKeys = from.map((f) => (useRawKeys ? f : bindings[f]));
-
-  const conditions = [
-    {
-      type: "variable_if",
-      name: `disable_artsey`,
-      value: 0,
-    },
-  ];
+  const fromKeys = from.map((f) => bindings[f]);
 
   if (isLockLayer) {
-    output.complex_modifications.rules.push({
-      description: `Enable ${layer}`,
-      manipulators: [
-        {
-          conditions: [
-            ...conditions,
-            {
-              type: "variable_if",
-              name: `layer_${layer}`,
-              value: 0,
-            },
-          ],
-          from: {
-            simultaneous: fromKeys.map((f) => ({ key_code: f })),
-            simultaneous_options: {
-              detect_key_down_uninterruptedly: false,
-              key_down_order: "insensitive",
-              key_up_order: "insensitive",
-              key_up_when: "any",
-            },
-          },
-          to: [
-            {
-              set_variable: {
-                name: `layer_${layer}`,
-                value: 1,
-              }
-            },
-            {
-              set_notification_message: {
-                id: `io.artsey.lock_${layer}`,
-                text: layer
-              }
-            },
-          ],
-          type: "basic",
-        },
-      ],
-    });
-    output.complex_modifications.rules.push({
-      description: `Cancel ${layer}`,
-      manipulators: [
-        {
-          conditions: [
-            ...conditions,
-            {
-              type: "variable_if",
-              name: `layer_${layer}`,
-              value: 1,
-            },
-          ],
-          from: {
-            simultaneous: fromKeys.map((f) => ({ key_code: f })),
-            simultaneous_options: {
-              detect_key_down_uninterruptedly: false,
-              key_down_order: "insensitive",
-              key_up_order: "insensitive",
-              key_up_when: "any",
-            },
-          },
-          to: [
-            {
-              set_variable: {
-                name: `layer_${layer}`,
-                value: 0,
-              },
-            },
-            {
-              set_notification_message: {
-                id: `io.artsey.lock_${layer}`,
-                text: ''
-              }
-            },
-          ],
-          type: "basic",
-        },
-      ],
-    });
-    return;
-  }
-
-  if (layer) {
-    conditions.push({
-      type: "variable_if",
-      name: `layer_${layer}`,
-      value: 1,
-    });
+    return doLockLayer(layer, fromKeys);
   }
 
   if (isOneShot) {
-    [true, false].forEach(cancel => {
-      output.complex_modifications.rules.push({
-        description: `[one shot] ${to}${cancel ? ' cancel':''}`,
-        manipulators: [
-          {
-            conditions: [
-              ...conditions,
-              ...(cancel ? [
-                {
-                  type: "variable_if",
-                  name: `one_shot_${to}`,
-                  value: 1,
-                }
-              ] : [])
-            ],
-            from: {
-              simultaneous: fromKeys.map((f) => ({ key_code: f })),
-              simultaneous_options: {
-                detect_key_down_uninterruptedly: false,
-                key_down_order: "insensitive",
-                key_up_order: "insensitive",
-                key_up_when: "any",
-              },
-            },
-            to: setOneShot(to, !cancel),
-            type: "basic",
-          },
-        ],
-      });
-    });
-
-    return;
+    return doOneShot(to, fromKeys);
   }
 
+  const conditions = [
+    checkEnabled,
+    ...( layer ? [ checkVariableSet(`layer_${layer}`) ] : [ ] )
+  ];
 
-  const matchingLayerIx = Object.values(layers).findIndex(
-    (f) => f.trigger === from[0]
+  const matchingLayer = Object.keys(layers).find(
+    (layername) => from.length === 1 && layers[layername].trigger === from[0]
   );
 
-  if (enableLayerHold && from.length === 1 && matchingLayerIx > -1) {
-    if (enableOneShots) {
-      buildCombinations(Object.keys(oneShots), true).forEach((mods) => {
-        output.complex_modifications.rules.push({
-          description: `[${mods.join()}] ${fromKeys.join()} to ${to} layer`,
-          manipulators: [
-            {
-              conditions: [
-                ...conditions,
-                ...mods.map((mod) => ({
-                  type: "variable_if",
-                  name: `one_shot_${mod}`,
-                  value: 1,
-                })),
-              ],
-              from: {
-                key_code: fromKeys[0],
-              },
-              to_if_alone: [
-                { ...mapTo(to)[0], modifiers: mods },
+  const combinations = buildCombinations(Object.keys(oneShots), false);
 
-                ...mods.flatMap((mod) => setOneShot(mod, false)),
-              ],
-              to: [
-                {
-                  set_variable: {
-                    name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
-                    value: 1,
-                  },
-                },
-              ],
-              to_after_key_up: [
-                {
-                  set_variable: {
-                    name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
-                    value: 0,
-                  },
-                },
-              ],
-              parameters: {
-                "basic.to_if_alone_timeout_milliseconds": layerHold,
-                "basic.to_if_held_down_threshold_milliseconds": layerHold,
-              },
-              type: "basic",
-            },
-          ],
-        });
+  combinations.forEach((mods) => {
+    const manipulator = {
+      conditions: [
+        ...conditions,
+        ...mods.map(checkOneShot),
+      ],
+      from: makeFrom(fromKeys),
+      to: [
+        { ...mapTo(to), modifiers: mods },
+
+        ...mods.flatMap(clearOneShot),
+      ],
+      type: "basic",
+    };
+
+    if (enableLayerHold && matchingLayer) {
+      Object.assign(manipulator, {
+        to_if_alone: manipulator.to,
+        to: setFlag(`layer_${matchingLayer}`),
+        to_after_key_up: clearFlag(`layer_${matchingLayer}`),
+        parameters: {
+          "basic.to_if_alone_timeout_milliseconds": layerHold,
+          "basic.to_if_held_down_threshold_milliseconds": layerHold,
+        },
       });
     }
 
     output.complex_modifications.rules.push({
-      description: `${fromKeys.join()} to ${to} layer`,
-      manipulators: [
-        {
-          conditions: [...conditions],
-          from: {
-            key_code: fromKeys[0],
-          },
-          to_if_alone: mapTo(to),
-          to: [
-            {
-              set_variable: {
-                name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
-                value: 1,
-              },
-            },
-          ],
-          to_after_key_up: [
-            {
-              set_variable: {
-                name: `layer_${Object.keys(layers)[matchingLayerIx]}`,
-                value: 0,
-              },
-            },
-          ],
-          parameters: {
-            "basic.to_if_alone_timeout_milliseconds": layerHold,
-            "basic.to_if_held_down_threshold_milliseconds": layerHold,
-          },
-          type: "basic",
-        },
-      ],
+      description: `${mods.length > 0 ? `[${mods.join()}] `: ''}${fromKeys.join()} to ${to}`,
+      manipulators: [ manipulator ],
     });
-  } else {
-    if (enableOneShots) {
-      buildCombinations(Object.keys(oneShots), true).forEach((mods) => {
-        output.complex_modifications.rules.push({
-          description: `[${mods.join()}] ${fromKeys.join()} to ${to}`,
-          manipulators: [
-            {
-              conditions: [
-                ...conditions,
-                ...mods.map((mod) => ({
-                  type: "variable_if",
-                  name: `one_shot_${mod}`,
-                  value: 1,
-                })),
-              ],
-              from: {
-                simultaneous: fromKeys.map((f) => ({ key_code: f })),
-                simultaneous_options: {
-                  detect_key_down_uninterruptedly: false,
-                  key_down_order: "insensitive",
-                  key_up_order: "insensitive",
-                  key_up_when: "any",
-                },
-              },
-              to: [
-                { ...mapTo(to)[0], modifiers: mods },
+  });
+}
 
-                ...mods.flatMap((mod) => ([
-                  {
-                    set_variable: {
-                      name: `one_shot_${mod}`,
-                      value: 0,
-                    }
-                  },
-                  {
-                    set_notification_message: {
-                      id: `io.artsey.one_shot_${mod}`,
-                      text: ''
-                    }
-                  }
-                ])),
-              ],
-              type: "basic",
-            },
-          ],
-        });
-      });
-    }
-
-    output.complex_modifications.rules.push({
-      description: `${fromKeys.join()} to ${to}`,
-      manipulators: [
-        {
-          conditions: [...conditions],
-          from: {
-            simultaneous: fromKeys.map((f) => ({ key_code: f })),
-            simultaneous_options: {
-              detect_key_down_uninterruptedly: false,
-              key_down_order: "insensitive",
-              key_up_order: "insensitive",
-              key_up_when: "any",
-            },
-          },
-          to: mapTo(to),
-          type: "basic",
-        },
-      ],
-    });
-  }
+function makeFrom(fromKeys) {
+  return fromKeys.length > 1 ? {
+    simultaneous: fromKeys.map((f) => ({ key_code: f })),
+    simultaneous_options: {
+      detect_key_down_uninterruptedly: false,
+      key_down_order: "insensitive",
+      key_up_order: "insensitive",
+      key_up_when: "any",
+    },
+  } : { key_code: fromKeys[0] };
 }
 
 // Used to map shifted symbols mainly
 function mapTo(key) {
-  if (key === "{") {
-    return [
-      {
-        key_code: "open_bracket",
-        modifiers: ["left_shift"],
-      },
-    ];
-  } else if (key === "}") {
-    return [
-      {
-        key_code: "close_bracket",
-        modifiers: ["left_shift"],
-      },
-    ];
-  } else if (key === "[") {
-    return [
-      {
-        key_code: "open_bracket",
-      },
-    ];
-  } else if (key === "]") {
-    return [
-      {
-        key_code: "close_bracket",
-      },
-    ];
-  } else if (key === "(") {
-    return [
-      {
-        key_code: "9",
-        modifiers: ["left_shift"],
-      },
-    ];
-  } else if (key === ")") {
-    return [
-      {
-        key_code: "0",
-        modifiers: ["left_shift"],
-      },
-    ];
-  } else if (key === "`") {
-    return [
-      {
-        key_code: "grave_accent_and_tilde",
-      },
-    ];
-  } else if (key === ";") {
-    return [
-      {
-        key_code: "semicolon",
-      },
-    ];
-  } else if (key === "\\") {
-    return [
-      {
-        key_code: "backslash",
-      },
-    ];
-  } else if (key === "!") {
-    return [
-      {
-        key_code: "1",
-        modifiers: ["left_shift"],
-      },
-    ];
-  } else if (key === "=") {
-    return [
-      {
-        key_code: "equal_sign",
-      },
-    ];
-  } else if (key === "-") {
-    return [
-      {
-        key_code: "hyphen",
-      },
-    ];
-  } else if (key === "?") {
-    return [
-      {
-        key_code: "slash",
-        modifiers: ["left_shift"],
-      },
-    ];
-  }
-  return [
-    {
-      key_code: key,
+  const mapping = {
+    "{": {
+      key_code: "open_bracket",
+      modifiers: ["left_shift"],
     },
-  ];
+    "}": {
+      key_code: "close_bracket",
+      modifiers: ["left_shift"],
+    },
+    "[": {
+      key_code: "open_bracket",
+    },
+    "]": {
+      key_code: "close_bracket",
+    },
+    "(": {
+      key_code: "9",
+      modifiers: ["left_shift"],
+    },
+    ")": {
+      key_code: "0",
+      modifiers: ["left_shift"],
+    },
+    "`": {
+      key_code: "grave_accent_and_tilde",
+    },
+    ";": {
+      key_code: "semicolon",
+    },
+    "\\": {
+      key_code: "backslash",
+    },
+    "!": {
+      key_code: "1",
+      modifiers: ["left_shift"],
+    },
+    "=": {
+      key_code: "equal_sign",
+    },
+    "-": {
+      key_code: "hyphen",
+    },
+    "?": {
+      key_code: "slash",
+      modifiers: ["left_shift"],
+    },
+  }
+  return mapping[key] ?? {
+    key_code: key,
+  };
 }
 
 function buildCombinations(inputs, ignoreEmpty) {
@@ -791,7 +624,7 @@ function buildCombinations(inputs, ignoreEmpty) {
     result.push(inputs.filter((k, ix) => combo[ix] === "1"));
   }
 
-  return ignoreEmpty
-    ? result.filter((k) => k.length > 0).sort((a, b) => b.length - a.length)
-    : result.sort((a, b) => b[1].length - a[1].length);
+  const filtered = ignoreEmpty ? result.filter((k) => k.length > 0) : result;
+
+  return filtered.sort((a, b) => b.length - a.length);
 }
