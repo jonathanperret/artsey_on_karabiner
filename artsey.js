@@ -160,7 +160,7 @@ const existing = JSON.parse(fs.readFileSync(path));
 const output = {};
 output.complex_modifications = {
   parameters: {
-    "basic.simultaneous_threshold_milliseconds": 100,
+    "basic.simultaneous_threshold_milliseconds": 200,
     "basic.to_delayed_action_delay_milliseconds": 500,
     "basic.to_if_alone_timeout_milliseconds": 1000,
     "basic.to_if_held_down_threshold_milliseconds": 500,
@@ -289,16 +289,16 @@ Object.entries(lockLayers).forEach(([layer, { trigger }]) => {
   mapKey(trigger, null, { isLockLayer: true, layer });
 });
 
+Object.entries(oneShots).forEach(([to, from]) => {
+  mapKey(from, to, { isOneShot: true });
+});
+
 // Add globals
 Object.entries(globals)
   .sort((a, b) => b[1].length - a[1].length)
   .forEach(([to, from]) => {
     mapKey(from, to, { enableOneShots: true });
   });
-
-Object.entries(oneShots).forEach(([to, from]) => {
-  mapKey(from, to, { isOneShot: true });
-});
 
 // layers
 Object.entries(layers).forEach(([layer, { trigger, map }]) => {
