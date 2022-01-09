@@ -525,7 +525,7 @@ function mapKey(
       ],
       from: makeFrom(fromKeys),
       to: [
-        { ...mapTo(to), modifiers: mods },
+        { ...mapTo(to, mods) },
 
         ...mods.flatMap(clearOneShot),
       ],
@@ -564,7 +564,7 @@ function makeFrom(fromKeys) {
 }
 
 // Used to map shifted symbols mainly
-function mapTo(key) {
+function mapTo(key_code, modifiers) {
   const mapping = {
     "{": {
       key_code: "open_bracket",
@@ -611,9 +611,11 @@ function mapTo(key) {
       key_code: "slash",
       modifiers: ["left_shift"],
     },
-  }
-  return mapping[key] ?? {
-    key_code: key,
+  };
+  const mapped = mapping[key_code] ?? { key_code };
+  return {
+    ...mapped,
+    modifiers: [ ...(mapped.modifiers ?? []), ...modifiers ],
   };
 }
 
