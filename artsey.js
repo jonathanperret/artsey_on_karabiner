@@ -1,7 +1,7 @@
 const fs = require("fs");
 
 // Config, change these before running
-const path = "../../.config/karabiner/karabiner.json"; // Path to your Karabiner.json usually ~/.config/karabiner/karabiner.json
+const path = `${process.env.HOME}/.config/karabiner/karabiner.json`; // Path to your Karabiner.json usually ~/.config/karabiner/karabiner.json
 
 const profile = "Artsey"; // Profile name in Karabiner, will be overwritten if it exists
 
