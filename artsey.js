@@ -24,7 +24,8 @@ const bindings = {
 const onEnable = [
   {
     "select_input_source": {
-      "language": "^en$"
+      "input_source_id": "com.apple.keylayout.US",
+      "language": "^en$",
     }
   }
 ];
@@ -32,6 +33,7 @@ const onEnable = [
 const onDisable = [
   {
     "select_input_source": {
+      "input_source_id": "com.apple.keylayout.French",
       "language": "^fr$"
     }
   }
